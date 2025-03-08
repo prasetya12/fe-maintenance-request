@@ -7,12 +7,12 @@ class RequestService implements RequestRepository {
   async getRequestStats() {
     const query = `
      query GetStats {
-    getStats {
-        openRequests
-        averageResolutionTime
-        urgentRequests
-    }
-}
+          getStats {
+              openRequests
+              averageResolutionTime
+              urgentRequests
+          }
+      }
     `;
     const response = await graphqlClient.request<{ getStats: any }>(query);
     return response.getStats;
@@ -24,12 +24,6 @@ class RequestService implements RequestRepository {
         createRequest(input: $input) {
           id
           title
-          description
-          statusId
-          urgencyId
-          createdAt
-          updatedAt
-          resolvedAt
         }
       }
     `;
@@ -37,13 +31,11 @@ class RequestService implements RequestRepository {
     return response;
   }
 
-  async updateRequestStatus(data: { id: string; statusId: number }): Promise<any> {
+  async updateRequestStatus(data: { id: string; title: string; description?: string; statusId: number; urgencyId: number }): Promise<any> {
     const mutation = `
       mutation($input: UpdateRequestStatusInput!) {
         updateRequestStatus(input: $input) {
           id
-          statusId
-          updatedAt
         }
       }
     `;
@@ -51,19 +43,64 @@ class RequestService implements RequestRepository {
     return response;
   }
 
-  async markAsResolved(data: { id: string; statusId: number }): Promise<any> {
+  async markAsResolved(id: string): Promise<any> {
     const mutation = `
-      mutation($input: MarkAsResolvedInput!) {
-        markAsResolved(input: $input) {
+      mutation($id: String!) {
+        markAsResolved(id:$id) {
           id
-          statusId
-          resolvedAt
-          updatedAt
+         
         }
       }
     `;
-    const response = await graphqlClient.request<{ markAsResolved: any }>(mutation, { input: data });
+    const response = await graphqlClient.request<{ markAsResolved: any }>(mutation, { id });
     return response;
+  }
+
+  async getRequest(): Promise<Request[]> {
+    const query = `query GetRequests {
+        getRequests {
+            id
+            title
+            status {
+                id
+                name
+            }
+            urgency {
+                id
+                name
+            }
+            createdAt
+        }
+    }
+    `
+    const response = await graphqlClient.request<{ getRequests: Request[] }>(query);
+    return response.getRequests
+  }
+
+  async getDetailRequest(id: string): Promise<Request> {
+    const query = `query GetDetailRequest($id: String!) {
+        getDetailRequest(id:$id) {
+            id
+            title
+            createdAt
+            status {
+                id
+                name
+            }
+            urgency {
+                id
+                name
+            }
+        }
+    }
+  `
+    const variables = { id };
+    const response = await graphqlClient.request<{ getDetailRequest: Request }>(
+      query,
+      variables
+    );
+
+    return response.getDetailRequest
   }
 }
 

@@ -1,39 +1,57 @@
+
 'use client'
-import { ArrowLeft } from "lucide-react"
-import { useForm, useFormContext, useWatch } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useParams } from 'next/navigation'
 import { FormRequest } from "../(components)/FormRequest"
 import { Form } from "@/components/ui/form"
-import { FormRequestDtoInterface, FormRequestDto } from "../(data)/FormRequestDto"
-import { Button } from "@/components/ui/button"
+import { useForm, useFormContext, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
-import { useCreateRequest } from "@/hook/request.hook"
+import { FormRequestDtoInterface, FormRequestDto } from "../(data)/FormRequestDto"
+import { ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useGetDetailRequest, useUpdateRequest } from '@/hook/request.hook'
+import Request from '@/domain/entities/Request'
+import { useEffect } from 'react'
 import { toast } from "sonner"
-export default function CreateRequest() {
-    const { mutateAsync } = useCreateRequest();
+
+export default function DetailPage() {
+    const { mutateAsync } = useUpdateRequest();
+    const params = useParams<{ id: string }>()
+    const router = useRouter()
+
+    const id = params.id
+
+    const { data } = useGetDetailRequest(id)
+
 
     const form = useForm<FormRequestDtoInterface>({
         resolver: zodResolver(FormRequestDto),
-        defaultValues: getDefaultValues(),
+        defaultValues: getDefaultValues(data as Request),
     })
-    const router = useRouter()
+
 
 
     const handleSubmit = form.handleSubmit((data) => {
         const payload = {
+            id,
             title: data.title,
             description: data.description,
             statusId: Number(data.statusId),
             urgencyId: Number(data.urgencyId)
         }
         toast.promise(mutateAsync(payload), {
-            loading: 'Loading ...',
-            success: 'Request successfully saved',
+            loading: 'Simpan informasi',
+            success: 'Request successfully edited',
             error: 'Error ...',
         })
-
         router.push('/')
     }, console.error)
+
+    useEffect(() => {
+        if (data) {
+            form.reset(getDefaultValues(data)); // Reset the form when data is available
+        }
+    }, [data, form]);
     return (
         <>
             <Form {...form}>
@@ -57,18 +75,15 @@ export default function CreateRequest() {
                     </div>
                 </form>
             </Form>
-
         </>
     )
 }
 
-
-
-function getDefaultValues(initial?: any) {
+function getDefaultValues(initial?: Request) {
     return {
-        title: '',
-        description: '',
-        statusId: '1',
-        urgencyId: '1'
+        title: initial?.title ?? '',
+        description: initial?.description ?? '',
+        statusId: String(initial?.status.id) ?? null,
+        urgencyId: String(initial?.urgency.id) ?? null
     }
 }
