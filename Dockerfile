@@ -23,6 +23,8 @@ WORKDIR /app
 # Copy built application from builder stage
 COPY --from=builder /app ./
 
+ENV PORT=4000
+
 # Expose Next.js port
 EXPOSE 4210
 
